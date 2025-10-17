@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plug & Play Web</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<script>
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let w, h;
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Plug object
+class Plug {
+  constructor() {
+    this.x = w / 2;
+    this.y = h / 2;
+    this.vx = 0;
+    this.vy = 0;
+    this.angle = 0;
+    this.plugged = false;
+  }
+  update() {
+    if (!this.plugged) {
+      this.vy += 0.5;
+      this.y += this.vy;
+      this.x += this.vx;
+      if (this.y > h - 80) {
+        this.y = h - 80;
+        this.vy *= -0.3;
+      }
+    }
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, 80);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.rect(-10, -20, 20, 40);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+class Socket {
+  constructor() {
+    this.x = w / 2;
+    this.y = h - 120;
+  }
+  draw() {
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.rect(this.x - 25, this.y - 15, 50, 30);
+    ctx.stroke();
+  }
+}
+
+let plug = new Plug();
+let socket = new Socket();
+let dragging = false;
+
+canvas.addEventListener('mousedown', e => {
+  const dx = e.clientX - plug.x;
+  const dy = e.clientY - plug.y;
+  if (Math.hypot(dx, dy) < 60) dragging = true;
+});
+canvas.addEventListener('mouseup', e => {
+  dragging = false;
+  const dx = plug.x - socket.x;
+  const dy = plug.y - socket.y;
+  if (Math.hypot(dx, dy) < 40) plug.plugged = true;
+});
+canvas.addEventListener('mousemove', e => {
+  if (dragging && !plug.plugged) {
+    plug.x = e.clientX;
+    plug.y = e.clientY;
+    plug.vx = 0;
+    plug.vy = 0;
+  }
+});
+
+function animate() {
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, w, h);
+  plug.update();
+  socket.draw();
+  plug.draw();
+
+  // cinematic text
+  if (plug.plugged) {
+    ctx.fillStyle = 'white';
+    ctx.font = '40px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CONNECTED', w/2, h/2);
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
